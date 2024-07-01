@@ -1,14 +1,24 @@
 from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import generics
 from .serializers import TeamSerializer, WorkerSerializer
 from .models import Team, Worker
 
 
-class TeamsView(viewsets.ModelViewSet):
+class TeamsList(generics.ListCreateAPIView):
     queryset = Team.objects.all().order_by('team_name')
     serializer_class = TeamSerializer
 
 
-class WorkersView(viewsets.ModelViewSet):
+class TeamDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Team.objects.all()
+    serializer_class = TeamSerializer
+
+
+
+class WorkersList(generics.ListCreateAPIView):
+    queryset = Worker.objects.all()
+    serializer_class = WorkerSerializer
+
+class WorkerDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Worker.objects.all()
     serializer_class = WorkerSerializer

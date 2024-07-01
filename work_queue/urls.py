@@ -16,18 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework import routers
-from ticket import views
-from worker import views as worker_views
+from ticket.views import TicketsView
+from worker.views import TeamsList, TeamDetail, WorkersList, WorkerDetail
 
-
-router = routers.DefaultRouter()
-router.register(r'ticket', views.TicketsView)
-router.register(r'team', worker_views.TeamsView)
-router.register(r'worker', worker_views.WorkersView)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('teams/', TeamsList.as_view()),
+    path('teams/<int:pk>/', TeamDetail.as_view()),
+    path('workers/', WorkersList.as_view()),
+    path('workers/<int:pk>/', WorkerDetail.as_view()),
     path('api-auth/', include('rest_framework.urls', namespace = 'rest_framework')),
     path('admin/', admin.site.urls),
 ]
