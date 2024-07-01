@@ -36,7 +36,7 @@ $ python manage.py migrate
 
 5. Create a superuser
 ```bash
-$ python manage.py createsuperuser --username <username of your liking>  --email <email address of your liking
+$ python manage.py createsuperuser --username <username of your liking>  --email <email address of your liking>
 ```
 You will be prompted to make a password, feel free to make any password you like. If you choose to use a simple password you may get a warning but just type Y and enter to continue with your chosen password
 
