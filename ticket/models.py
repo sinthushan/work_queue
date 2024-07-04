@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy
 
 from datetime import datetime
 
-from worker.models import Worker
+from worker.models import Worker, Team
 
 class Catergory(models.Model):
     category_name = models.CharField(max_length=250)
@@ -26,6 +26,8 @@ class Ticket(models.Model):
     completed_by =  models.ForeignKey(Worker, on_delete=models.SET_NULL, null=True, blank=True, related_name="completed_tickets" )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now_add=True)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, null=True, blank=True, related_name="tickets")
+
 
     def assign_ticket(self, worker: Worker):
         if self.status == self.TicketStatus.ASIGNED or self.status == self.TicketStatus.OPEN:
