@@ -27,38 +27,35 @@ class TicketsList(generics.ListAPIView):
         user = self.request.user
         return user.worker.team.tickets.all()
 
+
+class UpdateTicket(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = GetTicketSerializer
+    def get_queryset(self):
+        user = self.request.user
+        assigned_tickets =  user.worker.assigned_tickets.all()
+        created_tickets =  user.worker.created_tickets.all()
+        return assigned_tickets.union(created_tickets)
+
+    def patch(self, request, *args, **kwargs):
+        try:
+            worker_id = request.data['worker_id']
+            worker = Worker.objects.filter(id=worker_id).first()
+        except KeyError:
+            worker = None
+        ticket_id = request.data['ticket_id']
+        task = request.data['task']
+        ticket = Ticket.objects.filter(id=ticket_id).first()
+        ticket.update(task, worker=worker)
+        serializer = GetTicketSerializer(ticket)
+        return Response(serializer.data)
+
+
 class CreateTicket(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PostTicketSerializer
     queryset = Ticket.objects.all()
 
-@api_view(['PATCH'])
-def assign_ticket(request):
-    worker_id = request.data['worker_id']
-    ticket_id = request.data['ticket_id']
-    worker = Worker.objects.filter(id=worker_id).first()
-    ticket = Ticket.objects.filter(id=ticket_id).first()
-    ticket.assign_ticket(worker)
-    serializer = GetTicketSerializer(ticket)
-    return Response(serializer.data)
-
-@api_view(['PATCH'])
-def close_ticket(request):
-    worker_id = request.data['worker_id']
-    ticket_id = request.data['ticket_id']
-    worker = Worker.objects.filter(id=worker_id).first()
-    ticket = Ticket.objects.filter(id=ticket_id).first()
-    ticket.close_ticket(worker)
-    serializer = GetTicketSerializer(ticket)
-    return Response(serializer.data)
-
-@api_view(['PATCH'])
-def reject_ticket(request):
-    ticket_id = request.data['ticket_id']
-    ticket = Ticket.objects.filter(id=ticket_id).first()
-    ticket.reject_ticket()
-    serializer = GetTicketSerializer(ticket)
-    return Response(serializer.data)
 
 class TicketDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]

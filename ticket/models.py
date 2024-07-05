@@ -29,6 +29,19 @@ class Ticket(models.Model):
     team = models.ForeignKey(Team, on_delete=models.CASCADE, null=True, blank=True, related_name="tickets")
 
 
+
+    def update(self, task, **kwargs):
+        task_to_method = {
+            'assign': self.assign_ticket,
+            'close': self.close_ticket,
+            'reject': self.reject_ticket,
+        }
+        if task == 'reject':
+            task_to_method[task]()
+        else:
+            task_to_method[task](kwargs['worker'])
+
+
     def assign_ticket(self, worker: Worker):
         if self.status == self.TicketStatus.ASIGNED or self.status == self.TicketStatus.OPEN:
             self.status = self.TicketStatus.ASIGNED
@@ -38,7 +51,7 @@ class Ticket(models.Model):
 
 
     def close_ticket(self, worker: Worker):
-        self.status = self.TicketStatus.Completed
+        self.status = self.TicketStatus.COMPLETED
         self.assigned_to = None
         self.completed_by = worker
         self.updated = datetime.now()
