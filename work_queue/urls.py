@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from ticket.views import TicketsList, TicketDetail
+from ticket.views import TicketsList, TicketDetail, AssignedTickets, CreateTicket, assign_ticket, close_ticket, reject_ticket
 from worker.views import TeamsList, TeamDetail, WorkersList, WorkerDetail
 
 
@@ -27,6 +27,11 @@ urlpatterns = [
     path('workers/<int:pk>/', WorkerDetail.as_view()),
     path('tickets/', TicketsList.as_view()),
     path('tickets/<int:pk>/', TicketDetail.as_view()),
+    path('tickets/assigned', AssignedTickets.as_view()),
+    path('tickets/create', CreateTicket.as_view()),
+    path('tickets/assign',assign_ticket),
+    path('tickets/close',close_ticket),
+    path('tickets/reject',reject_ticket),
     path('api-auth/', include('rest_framework.urls', namespace = 'rest_framework')),
     path('admin/', admin.site.urls),
 ]
