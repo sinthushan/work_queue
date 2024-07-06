@@ -5,10 +5,6 @@ from datetime import datetime
 
 from worker.models import Worker, Team
 
-class Catergory(models.Model):
-    category_name = models.CharField(max_length=250)
-    duration = models.DurationField()
-
 class Ticket(models.Model):
 
     class TicketStatus(models.TextChoices):
@@ -21,7 +17,6 @@ class Ticket(models.Model):
     details = models.TextField()
     status = models.CharField(max_length=2, choices=TicketStatus.choices, default=TicketStatus.OPEN)
     creator = models.ForeignKey(Worker, on_delete=models.SET_NULL, null=True, blank=True, related_name="created_tickets")
-   # category = models.ForeignKey(Catergory, on_delete=models.SET_DEFAULT, default='')
     assigned_to =  models.ForeignKey(Worker, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_tickets")
     completed_by =  models.ForeignKey(Worker, on_delete=models.SET_NULL, null=True, blank=True, related_name="completed_tickets" )
     created = models.DateTimeField(auto_now_add=True)
@@ -29,36 +24,71 @@ class Ticket(models.Model):
     team = models.ForeignKey(Team, on_delete=models.CASCADE, null=True, blank=True, related_name="tickets")
 
 
-
-    def update(self, task, **kwargs):
+    def update(self, view, request):
         task_to_method = {
             'assign': self.assign_ticket,
             'close': self.close_ticket,
             'reject': self.reject_ticket,
         }
+        task = request.data.pop('task', None)
+        worker_id = request.data.pop('worker_id', request.user.worker.id)
         if task == 'reject':
-            task_to_method[task]()
+            updated_serializer = task_to_method[task](view)
         else:
-            task_to_method[task](kwargs['worker'])
+            updated_serializer = task_to_method[task](view, worker_id)
+        self.updated = datetime.now()
+        return updated_serializer
 
-
-    def assign_ticket(self, worker: Worker):
+    def assign_ticket(self,view, worker_id):
         if self.status == self.TicketStatus.ASIGNED or self.status == self.TicketStatus.OPEN:
-            self.status = self.TicketStatus.ASIGNED
-            self.assigned_to = worker
-            self.updated = datetime.now()
-            self.save()
+            data = {
+                'status': self.TicketStatus.ASIGNED,
+                'assigned_to':  worker_id,
+            }
+            updated_serializer = self.perform_update(view, data, True)
+            return updated_serializer
 
+    def close_ticket(self, view, worker_id):
+        if self.status == self.TicketStatus.ASIGNED:
+            data= {
+                'status': self.TicketStatus.COMPLETED,
+                'assigned_to':  None,
+                'completed_by':  worker_id,
+            }
+            updated_serializer = self.perform_update(view, data, True)
+            return updated_serializer
 
-    def close_ticket(self, worker: Worker):
-        self.status = self.TicketStatus.COMPLETED
-        self.assigned_to = None
-        self.completed_by = worker
-        self.updated = datetime.now()
-        self.save()
+    def reject_ticket(self, view):
+        if self.status == self.TicketStatus.ASIGNED or self.status == self.TicketStatus.OPEN:
+            data= {
+                'status': self.TicketStatus.REJECTED,
+                'assigned_to':  None,
+            }
+            updated_serializer = self.perform_update(view, data, True)
+            return updated_serializer
     
-    def reject_ticket(self):
-        self.status = self.TicketStatus.REJECTED
-        self.assigned_to = None
-        self.updated = datetime.now()
-        self.save()
+    def add_comment(self, view, request):
+        data= {
+            'creator': request.user.worker.id,
+            'created': datetime.now(),
+            'comment': request.data['comment'],
+            'ticket': self.pk,
+        }
+        updated_serializer = self.perform_update(view, data)
+        return updated_serializer
+
+    def perform_update(self, view, data, partial=False):
+        serializer = view.get_serializer(self, data=data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+        return serializer
+
+class Comment(models.Model):
+    # comments allow ticket creator and ticket asignee to communicate in case 
+    # any descrepency with what the ticket is asking. You should not be able to remove a comment
+    # or modify it. When a worker leave the company the comment should persist but no longer have a creator.
+    # These measures are to ensure that the work that the asignee has done matches exactly what was requested
+    creator = models.ForeignKey(Worker, on_delete=models.SET_NULL, null=True, blank=True, related_name="comments") 
+    created = models.DateTimeField(auto_now_add=True)
+    comment = models.TextField()
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="comments")
