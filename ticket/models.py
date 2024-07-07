@@ -26,9 +26,9 @@ class Ticket(models.Model):
 
     def update(self, view, request):
         task_to_method = {
-            'assign': self.assign_ticket,
-            'close': self.close_ticket,
-            'reject': self.reject_ticket,
+            'assign': self._assign_ticket,
+            'close': self._close_ticket,
+            'reject': self._reject_ticket,
         }
         task = request.data.pop('task', None)
         worker_id = request.data.pop('worker_id', request.user.worker.id)
@@ -39,32 +39,32 @@ class Ticket(models.Model):
         self.updated = datetime.now()
         return updated_serializer
 
-    def assign_ticket(self,view, worker_id):
+    def _assign_ticket(self,view, worker_id):
         if self.status == self.TicketStatus.ASIGNED or self.status == self.TicketStatus.OPEN:
             data = {
                 'status': self.TicketStatus.ASIGNED,
                 'assigned_to':  worker_id,
             }
-            updated_serializer = self.perform_update(view, data, True)
+            updated_serializer = self._perform_update(view, data, True)
             return updated_serializer
 
-    def close_ticket(self, view, worker_id):
+    def _close_ticket(self, view, worker_id):
         if self.status == self.TicketStatus.ASIGNED:
             data= {
                 'status': self.TicketStatus.COMPLETED,
                 'assigned_to':  None,
                 'completed_by':  worker_id,
             }
-            updated_serializer = self.perform_update(view, data, True)
+            updated_serializer = self._perform_update(view, data, True)
             return updated_serializer
 
-    def reject_ticket(self, view):
+    def _reject_ticket(self, view):
         if self.status == self.TicketStatus.ASIGNED or self.status == self.TicketStatus.OPEN:
             data= {
                 'status': self.TicketStatus.REJECTED,
                 'assigned_to':  None,
             }
-            updated_serializer = self.perform_update(view, data, True)
+            updated_serializer = self._perform_update(view, data, True)
             return updated_serializer
     
     def add_comment(self, view, request):
@@ -74,10 +74,10 @@ class Ticket(models.Model):
             'comment': request.data['comment'],
             'ticket': self.pk,
         }
-        updated_serializer = self.perform_update(view, data)
+        updated_serializer = self._perform_update(view, data)
         return updated_serializer
 
-    def perform_update(self, view, data, partial=False):
+    def _perform_update(self, view, data, partial=False):
         serializer = view.get_serializer(self, data=data, partial=partial)
         if serializer.is_valid():
             serializer.save()
