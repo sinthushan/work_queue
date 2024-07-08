@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
 
 User = get_user_model()
 
@@ -23,7 +25,7 @@ class Team(models.Model):
             new_worker = Worker.objects.create(user=user, **serializer.validated_data)
             updated_serializer = view.get_serializer(new_worker)
             return updated_serializer
-        return None
+        return serializer
 
 
 class Worker(models.Model):
@@ -37,6 +39,7 @@ class Worker(models.Model):
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True, related_name="workers")
     position_type = models.CharField(max_length=2, choices=PositionType.choices, default=PositionType.FULL_TIME)
     work_hours = models.FloatField()
+    permission_group = models.IntegerField(default=1)
     def get_availability(self):
         hours_allocated = 0
         for ticket in self.assigned_tickets:
